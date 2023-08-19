@@ -7,34 +7,47 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
 import study.tests.builder.FilmeBuilder;
 import study.tests.builder.UsuarioBuilder;
 import study.tests.entities.Filme;
 import study.tests.entities.Usuario;
 import study.tests.exceptions.CampoObrigatorioException;
 import study.tests.exceptions.FilmeSemEstoqueException;
+import study.tests.exceptions.UsuarioNegativadoException;
 import study.tests.matchers.CustomMatchers;
+import study.tests.repository.LocacaoRepository;
 import study.tests.utils.DateUtils;
 
 import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+//@RequiredArgsConstructor
 public class LocacaoServiceTest {
+    private LocacaoService locacaoService;
+    private LocacaoRepository locacaoRepository;
+    private SPCService spcService;
 
     @Rule
     public ErrorCollector error = new ErrorCollector();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
-    private LocacaoService locacaoService;
     private Usuario usuario;
 
     @Before
     public void before(){
         locacaoService = new LocacaoService();
+
+        locacaoRepository = Mockito.mock(LocacaoRepository.class);
+        spcService = Mockito.mock(SPCService.class);
+
+        locacaoService.setLocacaoRepository(locacaoRepository); // <- Muito feio
+        locacaoService.setSpcService(spcService); // <- Muito feio
+
         usuario = UsuarioBuilder.buildUsuario().build();
     }
 
@@ -127,5 +140,14 @@ public class LocacaoServiceTest {
         var locacao = locacaoService.alugarFilme(usuario, filmeList);
 
         Assert.assertThat(locacao.getDtRetorno(), CustomMatchers.isDayOfWeek(DayOfWeek.MONDAY));
+    }
+
+    @Test(expected = UsuarioNegativadoException.class)
+    public void naoDeveAlugatFilmeParaUsuarioNegativadoSPC(){
+        var filmes = Collections.singletonList(FilmeBuilder.criarFilme().build());
+
+            Mockito.when(spcService.possuiNegativado(usuario)).thenReturn(true);
+
+        locacaoService.alugarFilme(usuario, filmes);
     }
 }

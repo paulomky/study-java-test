@@ -1,18 +1,22 @@
 package study.tests.services;
 
+import lombok.RequiredArgsConstructor;
 import study.tests.entities.Filme;
 import study.tests.entities.Locacao;
 import study.tests.entities.Usuario;
 import study.tests.exceptions.CampoObrigatorioException;
 import study.tests.exceptions.FilmeSemEstoqueException;
+import study.tests.exceptions.UsuarioNegativadoException;
 import study.tests.repository.LocacaoRepository;
 import study.tests.utils.DateUtils;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
+//@RequiredArgsConstructor
 public class LocacaoService {
     private LocacaoRepository locacaoRepository;
+    private SPCService spcService;
     public Locacao alugarFilme(Usuario usuario, List<Filme> filmeList) {
 
         validFilme(filmeList);
@@ -24,6 +28,10 @@ public class LocacaoService {
         locacao.setUsuario(usuario);
         locacao.setFilmes(filmeList);
         locacao.setDtLocacao(now);
+
+        if(spcService.possuiNegativado(usuario)){
+            throw new UsuarioNegativadoException(usuario);
+        }
 
         var index = 1;
         var precoLocacao = 0D;
@@ -48,7 +56,6 @@ public class LocacaoService {
         var dataEntrega = DateUtils.adicionarDias(now, 1L);
         locacao.setDtRetorno(dataEntrega);
 
-        //TODO salvar no banco
         locacaoRepository.salvar(locacao);
 
         return locacao;
@@ -74,5 +81,13 @@ public class LocacaoService {
                 throw new FilmeSemEstoqueException(filme);
             }
         }
+    }
+
+    public void setLocacaoRepository(LocacaoRepository locacaoRepository){
+        this.locacaoRepository = locacaoRepository;
+    }
+
+    public void setSpcService(SPCService spcService){
+        this.spcService = spcService;
     }
 }

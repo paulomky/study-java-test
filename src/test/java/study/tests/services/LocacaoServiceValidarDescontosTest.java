@@ -16,6 +16,7 @@ import study.tests.entities.Usuario;
 import java.util.Collection;
 import java.util.List;
 
+//@RequiredArgsConstructor
 @RunWith(Parameterized.class)
 public class LocacaoServiceValidarDescontosTest {
     private LocacaoService locacaoService;

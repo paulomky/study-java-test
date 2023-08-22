@@ -7,7 +7,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExpectedException;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import study.tests.builder.FilmeBuilder;
 import study.tests.builder.LocacaoBuilder;
 import study.tests.builder.UsuarioBuilder;
@@ -28,9 +31,13 @@ import java.util.Collections;
 import java.util.List;
 
 public class LocacaoServiceTest {
+    @InjectMocks
     private LocacaoService locacaoService;
+    @Mock
     private SPCService spcService;
+    @Mock
     private EmailService emailService;
+    @Mock
     private LocacaoRepository locacaoRepository;
 
     @Rule
@@ -38,22 +45,11 @@ public class LocacaoServiceTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    private Usuario usuario;
+    private final Usuario usuario = UsuarioBuilder.criarUsuario().build();;
 
     @Before
     public void before(){
-        locacaoService = new LocacaoService();
-
-        locacaoRepository = Mockito.mock(LocacaoRepository.class); // <- Muito feio
-        spcService = Mockito.mock(SPCService.class); // <- Muito feio
-
-        locacaoService.setLocacaoRepository(locacaoRepository); // <- Muito feio
-        locacaoService.setSpcService(spcService); // <- Muito feio
-
-        emailService = Mockito.mock(EmailService.class); // <- Muito feio
-        locacaoService.setEmailService(emailService); // <- Muito feio
-
-        usuario = UsuarioBuilder.criarUsuario().build();
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test

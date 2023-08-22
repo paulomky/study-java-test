@@ -13,10 +13,11 @@ import study.tests.utils.DateUtils;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+@RequiredArgsConstructor
 public class LocacaoService {
-    private LocacaoRepository locacaoRepository;
-    private SPCService spcService;
-    private EmailService emailService;
+    private final LocacaoRepository locacaoRepository;
+    private final SPCService spcService;
+    private final EmailService emailService;
     public Locacao alugarFilme(Usuario usuario, List<Filme> filmeList) {
 
         validFilme(filmeList);
@@ -90,17 +91,5 @@ public class LocacaoService {
                 emailService.notificarEmail(locacao);
             }
         }
-    }
-
-    public void setLocacaoRepository(LocacaoRepository locacaoRepository){
-        this.locacaoRepository = locacaoRepository;
-    }
-
-    public void setSpcService(SPCService spcService){
-        this.spcService = spcService;
-    }
-
-    public void setEmailService(EmailService emailService){
-        this.emailService = emailService;
     }
 }

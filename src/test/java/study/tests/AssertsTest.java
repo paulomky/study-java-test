@@ -1,7 +1,8 @@
 package study.tests;
 
+
 import org.junit.Assert;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import study.tests.entities.Usuario;
 
 public class AssertsTest {

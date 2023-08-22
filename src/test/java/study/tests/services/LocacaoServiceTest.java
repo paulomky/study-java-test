@@ -7,17 +7,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExpectedException;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import study.tests.builder.FilmeBuilder;
 import study.tests.builder.LocacaoBuilder;
 import study.tests.builder.UsuarioBuilder;
 import study.tests.entities.Filme;
+import study.tests.entities.Locacao;
 import study.tests.entities.Usuario;
 import study.tests.exceptions.CampoObrigatorioException;
 import study.tests.exceptions.FilmeSemEstoqueException;
+import study.tests.exceptions.SPCException;
 import study.tests.exceptions.UsuarioNegativadoException;
 import study.tests.matchers.CustomMatchers;
 import study.tests.repository.LocacaoRepository;
@@ -144,7 +143,7 @@ public class LocacaoServiceTest {
     }
 
     @Test
-    public void naoDeveAlugatFilmeParaUsuarioNegativadoSPC(){
+    public void naoDeveAlugatFilmeParaUsuarioNegativadoSPC() throws Exception {
         var filmes = Collections.singletonList(FilmeBuilder.criarFilme().build());
 
         Mockito.when(spcService.possuiNegativado(Mockito.any(Usuario.class))).thenReturn(true);
@@ -196,5 +195,33 @@ public class LocacaoServiceTest {
         Mockito.verify(emailService).notificarEmail(locacao.get(1));
         Mockito.verify(emailService, Mockito.never()).notificarEmail(locacao.get(2));
         Mockito.verifyNoMoreInteractions(emailService);
+    }
+
+    @Test
+    public void deveTratarErroSPC() throws Exception {
+        var filmes = Collections.singletonList(FilmeBuilder.criarFilme().build());
+
+        Mockito.when(spcService.possuiNegativado(usuario)).thenThrow(new Exception("503 Service Unavailable"));
+
+        exception.expect(SPCException.class);
+        exception.expectMessage("Erro ao consumir servico SPC: 503 Service Unavailable");
+
+        locacaoService.alugarFilme(usuario, filmes);
+    }
+
+    @Test
+    public void deveProrrogarUmaLocacao(){
+        var locacao = LocacaoBuilder.criarLocacao().build();
+
+        locacaoService.prorrogarLocacao(locacao, 5L);
+
+        var argCapture = ArgumentCaptor.forClass(Locacao.class);
+        Mockito.verify(locacaoRepository).salvar(argCapture.capture());
+
+        var locacaoCapturada = argCapture.getValue();
+
+        error.checkThat(locacaoCapturada.getValor(), CoreMatchers.is(125D));
+        error.checkThat(locacaoCapturada.getDtLocacao(), CustomMatchers.isToday());
+        error.checkThat(locacaoCapturada.getDtRetorno(), CustomMatchers.todayPlusDays(5L));
     }
 }

@@ -6,6 +6,7 @@ import study.tests.entities.Locacao;
 import study.tests.entities.Usuario;
 import study.tests.exceptions.CampoObrigatorioException;
 import study.tests.exceptions.FilmeSemEstoqueException;
+import study.tests.exceptions.SPCException;
 import study.tests.exceptions.UsuarioNegativadoException;
 import study.tests.repository.LocacaoRepository;
 import study.tests.utils.DateUtils;
@@ -30,11 +31,9 @@ public class LocacaoService {
         locacao.setFilmes(filmeList);
         locacao.setDtLocacao(now);
 
-        if(spcService.possuiNegativado(usuario)){
-            throw new UsuarioNegativadoException(usuario);
-        }
+        validSPC(usuario);
 
-        var index = 1;
+        int index = 1;
         var precoLocacao = 0D;
         for(var filme : filmeList) {
 
@@ -84,6 +83,19 @@ public class LocacaoService {
         }
     }
 
+    public void validSPC(Usuario usuario){
+        boolean isNegativado;
+        try {
+            isNegativado = spcService.possuiNegativado(usuario);
+        } catch (Exception e){
+            throw new SPCException(e.getMessage());
+        }
+
+        if(isNegativado){
+            throw new UsuarioNegativadoException(usuario);
+        }
+    }
+
     public void notificarDevolucoesAtrasadas() {
         var locacoesAtrasadas = locacaoRepository.getLocacoesComDevolucoesAtrasadas();
         for(Locacao locacao : locacoesAtrasadas){
@@ -91,5 +103,17 @@ public class LocacaoService {
                 emailService.notificarEmail(locacao);
             }
         }
+    }
+
+    public void prorrogarLocacao(Locacao locacao, Long dias){
+        var newLocacao = new Locacao();
+
+        newLocacao.setFilmes(locacao.getFilmes());
+        newLocacao.setUsuario(locacao.getUsuario());
+        newLocacao.setValor(locacao.getValor() * dias);
+        newLocacao.setDtRetorno(OffsetDateTime.now().plusDays(dias));
+        newLocacao.setDtLocacao(OffsetDateTime.now());
+
+        locacaoRepository.salvar(newLocacao);
     }
 }

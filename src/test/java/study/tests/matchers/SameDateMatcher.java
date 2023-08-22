@@ -23,6 +23,6 @@ public class SameDateMatcher extends TypeSafeMatcher<OffsetDateTime> {
 
     @Override
     public void describeTo(Description description) {
-
+        description.appendText(date.toString());
     }
 }

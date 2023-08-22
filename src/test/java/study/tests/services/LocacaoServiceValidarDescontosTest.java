@@ -8,18 +8,20 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.Mockito;
 import study.tests.builder.FilmeBuilder;
 import study.tests.builder.UsuarioBuilder;
 import study.tests.entities.Filme;
 import study.tests.entities.Usuario;
+import study.tests.repository.LocacaoRepository;
 
 import java.util.Collection;
 import java.util.List;
 
-//@RequiredArgsConstructor
 @RunWith(Parameterized.class)
 public class LocacaoServiceValidarDescontosTest {
     private LocacaoService locacaoService;
+    private SPCService spcService;
     private Usuario usuario;
 
     @Parameter
@@ -42,7 +44,14 @@ public class LocacaoServiceValidarDescontosTest {
     @Before
     public void setup() {
         locacaoService = new LocacaoService();
-        usuario = UsuarioBuilder.buildUsuario().build();
+
+        LocacaoRepository locacaoRepository = Mockito.mock(LocacaoRepository.class); // <- Muito feio
+        spcService = Mockito.mock(SPCService.class); // <- Muito feio
+
+        locacaoService.setLocacaoRepository(locacaoRepository); // <- Muito feio
+        locacaoService.setSpcService(spcService); // <- Muito feio
+
+        usuario = UsuarioBuilder.criarUsuario().build();
     }
 
     @Parameters(name = "{2}")

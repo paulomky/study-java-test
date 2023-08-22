@@ -9,6 +9,7 @@ import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import study.tests.builder.FilmeBuilder;
+import study.tests.builder.LocacaoBuilder;
 import study.tests.builder.UsuarioBuilder;
 import study.tests.entities.Filme;
 import study.tests.entities.Usuario;
@@ -22,14 +23,15 @@ import study.tests.utils.DateUtils;
 import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-//@RequiredArgsConstructor
 public class LocacaoServiceTest {
     private LocacaoService locacaoService;
-    private LocacaoRepository locacaoRepository;
     private SPCService spcService;
+    private EmailService emailService;
+    private LocacaoRepository locacaoRepository;
 
     @Rule
     public ErrorCollector error = new ErrorCollector();
@@ -42,13 +44,16 @@ public class LocacaoServiceTest {
     public void before(){
         locacaoService = new LocacaoService();
 
-        locacaoRepository = Mockito.mock(LocacaoRepository.class);
-        spcService = Mockito.mock(SPCService.class);
+        locacaoRepository = Mockito.mock(LocacaoRepository.class); // <- Muito feio
+        spcService = Mockito.mock(SPCService.class); // <- Muito feio
 
         locacaoService.setLocacaoRepository(locacaoRepository); // <- Muito feio
         locacaoService.setSpcService(spcService); // <- Muito feio
 
-        usuario = UsuarioBuilder.buildUsuario().build();
+        emailService = Mockito.mock(EmailService.class); // <- Muito feio
+        locacaoService.setEmailService(emailService); // <- Muito feio
+
+        usuario = UsuarioBuilder.criarUsuario().build();
     }
 
     @Test
@@ -142,12 +147,58 @@ public class LocacaoServiceTest {
         Assert.assertThat(locacao.getDtRetorno(), CustomMatchers.isDayOfWeek(DayOfWeek.MONDAY));
     }
 
-    @Test(expected = UsuarioNegativadoException.class)
+    @Test
     public void naoDeveAlugatFilmeParaUsuarioNegativadoSPC(){
         var filmes = Collections.singletonList(FilmeBuilder.criarFilme().build());
 
-            Mockito.when(spcService.possuiNegativado(usuario)).thenReturn(true);
+        Mockito.when(spcService.possuiNegativado(Mockito.any(Usuario.class))).thenReturn(true);
+        var exceptionMessage = String.format("Não é possível realizar a locação pois o usuário %s está negativado no SPC.", usuario.getNome());
 
-        locacaoService.alugarFilme(usuario, filmes);
+        try {
+            locacaoService.alugarFilme(usuario, filmes);
+            Assert.fail();
+        }
+        catch (UsuarioNegativadoException e){
+            Assert.assertThat(e.getMessage(), CoreMatchers.is(exceptionMessage));
+        }
+
+        Mockito.verify(spcService).possuiNegativado(usuario);
+    }
+
+    @Test
+    public void deveEnviarEmailParaLocacoesAtrasadas(){
+        var usuario2 = UsuarioBuilder.criarUsuario().nome("Jorge").build();
+        var filmes2 = Arrays.asList(
+                FilmeBuilder.criarFilme().nome("Barbie").build()
+                , FilmeBuilder.criarFilme().build()
+        );
+
+        var usuario3 = UsuarioBuilder.criarUsuario().nome("Augusto").build();
+        var filmes3 = Collections.singletonList(FilmeBuilder.criarFilme().nome("Talk to Me").build());
+
+        var locacao = Arrays.asList(
+                LocacaoBuilder.criarLocacao()
+                        .usuario(usuario)
+                        .atrasado()
+                        .build()
+                , LocacaoBuilder.criarLocacao()
+                        .usuario(usuario2)
+                        .filmes(filmes2)
+                        .atrasado()
+                        .build()
+                , LocacaoBuilder.criarLocacao()
+                        .usuario(usuario3)
+                        .filmes(filmes3)
+                        .build()
+        );
+
+        Mockito.when(locacaoRepository.getLocacoesComDevolucoesAtrasadas()).thenReturn(locacao);
+
+        locacaoService.notificarDevolucoesAtrasadas();
+
+        Mockito.verify(emailService).notificarEmail(locacao.get(0));
+        Mockito.verify(emailService).notificarEmail(locacao.get(1));
+        Mockito.verify(emailService, Mockito.never()).notificarEmail(locacao.get(2));
+        Mockito.verifyNoMoreInteractions(emailService);
     }
 }

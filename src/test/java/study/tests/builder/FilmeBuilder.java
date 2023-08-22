@@ -27,6 +27,11 @@ public class FilmeBuilder {
         return this;
     }
 
+    public FilmeBuilder nome(String nome){
+        this.getFilme().setNome(nome);
+        return this;
+    }
+
     public Filme build(){
         return this.getFilme();
     }

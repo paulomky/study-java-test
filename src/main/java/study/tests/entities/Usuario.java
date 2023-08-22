@@ -11,4 +11,9 @@ import lombok.Setter;
 @EqualsAndHashCode
 public class Usuario {
     private String nome;
+
+    @Override
+    public String toString() {
+        return "<".concat(nome).concat(">");
+    }
 }

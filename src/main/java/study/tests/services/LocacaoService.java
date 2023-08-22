@@ -13,10 +13,10 @@ import study.tests.utils.DateUtils;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-//@RequiredArgsConstructor
 public class LocacaoService {
     private LocacaoRepository locacaoRepository;
     private SPCService spcService;
+    private EmailService emailService;
     public Locacao alugarFilme(Usuario usuario, List<Filme> filmeList) {
 
         validFilme(filmeList);
@@ -83,11 +83,24 @@ public class LocacaoService {
         }
     }
 
+    public void notificarDevolucoesAtrasadas() {
+        var locacoesAtrasadas = locacaoRepository.getLocacoesComDevolucoesAtrasadas();
+        for(Locacao locacao : locacoesAtrasadas){
+            if(locacao.getDtRetorno().isBefore(OffsetDateTime.now())) {
+                emailService.notificarEmail(locacao);
+            }
+        }
+    }
+
     public void setLocacaoRepository(LocacaoRepository locacaoRepository){
         this.locacaoRepository = locacaoRepository;
     }
 
     public void setSpcService(SPCService spcService){
         this.spcService = spcService;
+    }
+
+    public void setEmailService(EmailService emailService){
+        this.emailService = emailService;
     }
 }

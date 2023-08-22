@@ -10,10 +10,15 @@ import study.tests.entities.Usuario;
 @NoArgsConstructor
 public class UsuarioBuilder {
     private Usuario usuario;
-    public static UsuarioBuilder buildUsuario(){
+    public static UsuarioBuilder criarUsuario(){
         var builder = new UsuarioBuilder();
         builder.setUsuario(new Usuario("Paulo"));
         return builder;
+    }
+
+    public UsuarioBuilder nome(String nome){
+        this.getUsuario().setNome(nome);
+        return this;
     }
 
     public Usuario build(){

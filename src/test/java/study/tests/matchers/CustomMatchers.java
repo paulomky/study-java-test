@@ -19,4 +19,8 @@ public class CustomMatchers {
     public static SameDateMatcher todayPlusDays(Long days){
         return new SameDateMatcher(OffsetDateTime.now().plusDays(days));
     }
+
+    public static SameDateMatcher sameDate(OffsetDateTime date) {
+        return new SameDateMatcher(date);
+    }
 }

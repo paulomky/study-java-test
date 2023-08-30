@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class LocacaoServiceTest {
-    @InjectMocks
+    @InjectMocks @Spy
     private LocacaoService locacaoService;
     @Mock
     private SPCService spcService;
@@ -58,14 +58,17 @@ public class LocacaoServiceTest {
                         .precoLocacao(18.90D)
                         .build()
         );
+        var dateNowMock = OffsetDateTime.parse("2023-08-30T15:00:00.000Z"); //Quarta-feira
+
+        Mockito.doReturn(dateNowMock).when(locacaoService).getNow();
 
         var locacao = locacaoService.alugarFilme(usuario, filmeList);
 
         error.checkThat(18.90D, CoreMatchers.is(locacao.getValor()));
         error.checkThat(1, CoreMatchers.is(locacao.getFilmes().size()));
 
-        error.checkThat(locacao.getDtLocacao(), CustomMatchers.isToday());
-        error.checkThat(locacao.getDtRetorno(), CustomMatchers.todayPlusDays(1L));
+        error.checkThat(locacao.getDtLocacao(), CustomMatchers.sameDate(dateNowMock));
+        error.checkThat(locacao.getDtRetorno(), CustomMatchers.sameDate(dateNowMock.plusDays(1L)));
     }
 
     @Test
@@ -109,7 +112,7 @@ public class LocacaoServiceTest {
             locacaoService.alugarFilme(null, filmeList);
             Assert.fail();
         } catch (CampoObrigatorioException e) {
-            Assert.assertEquals(e.getMessage(), "O Usuario selecionado para locação não pode ser null.");
+            Assert.assertEquals("O Usuario selecionado para locação não pode ser null.", e.getMessage());
         }
     }
 
@@ -137,9 +140,11 @@ public class LocacaoServiceTest {
                 FilmeBuilder.criarFilme().build()
         );
 
+        Mockito.doReturn(OffsetDateTime.parse("2023-08-26T00:00:00.000Z")).when(locacaoService).getNow(); //Sábado
+
         var locacao = locacaoService.alugarFilme(usuario, filmeList);
 
-        Assert.assertThat(locacao.getDtRetorno(), CustomMatchers.isDayOfWeek(DayOfWeek.MONDAY));
+        Assert.assertThat(locacao.getDtRetorno().getDayOfWeek(), CoreMatchers.is(DayOfWeek.MONDAY));
     }
 
     @Test

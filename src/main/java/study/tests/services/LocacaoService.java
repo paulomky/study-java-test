@@ -11,6 +11,7 @@ import study.tests.exceptions.UsuarioNegativadoException;
 import study.tests.repository.LocacaoRepository;
 import study.tests.utils.DateUtils;
 
+import java.time.DayOfWeek;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class LocacaoService {
         validFilme(filmeList);
         validUsuario(usuario);
 
-        var now = OffsetDateTime.now();
+        var now = getNow();
 
         var locacao = new Locacao();
         locacao.setUsuario(usuario);
@@ -33,6 +34,25 @@ public class LocacaoService {
 
         validSPC(usuario);
 
+        locacao.setValor(getPrecoLocacao(filmeList));
+
+        var dataEntrega = DateUtils.adicionarDias(now, 1L);
+
+        if(dataEntrega.getDayOfWeek().equals(DayOfWeek.SUNDAY))
+            dataEntrega = dataEntrega.plusDays(1L);
+
+        locacao.setDtRetorno(dataEntrega);
+
+        locacaoRepository.salvar(locacao);
+
+        return locacao;
+    }
+
+    protected OffsetDateTime getNow() {
+        return OffsetDateTime.now();
+    }
+
+    private static double getPrecoLocacao(List<Filme> filmeList) {
         int index = 1;
         var precoLocacao = 0D;
         for(var filme : filmeList) {
@@ -50,15 +70,7 @@ public class LocacaoService {
             precoLocacao = precoLocacao + valorFilme;
             index++;
         }
-
-        locacao.setValor(precoLocacao);
-
-        var dataEntrega = DateUtils.adicionarDias(now, 1L);
-        locacao.setDtRetorno(dataEntrega);
-
-        locacaoRepository.salvar(locacao);
-
-        return locacao;
+        return precoLocacao;
     }
 
     private void validUsuario(Usuario usuario) {
@@ -83,15 +95,15 @@ public class LocacaoService {
         }
     }
 
-    public void validSPC(Usuario usuario){
+    public void validSPC(Usuario usuario) {
         boolean isNegativado;
         try {
             isNegativado = spcService.possuiNegativado(usuario);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new SPCException(e.getMessage());
         }
 
-        if(isNegativado){
+        if (isNegativado) {
             throw new UsuarioNegativadoException(usuario);
         }
     }
@@ -99,7 +111,7 @@ public class LocacaoService {
     public void notificarDevolucoesAtrasadas() {
         var locacoesAtrasadas = locacaoRepository.getLocacoesComDevolucoesAtrasadas();
         for(Locacao locacao : locacoesAtrasadas){
-            if(locacao.getDtRetorno().isBefore(OffsetDateTime.now())) {
+            if(locacao.getDtRetorno().isBefore(getNow())) {
                 emailService.notificarEmail(locacao);
             }
         }
@@ -111,8 +123,8 @@ public class LocacaoService {
         newLocacao.setFilmes(locacao.getFilmes());
         newLocacao.setUsuario(locacao.getUsuario());
         newLocacao.setValor(locacao.getValor() * dias);
-        newLocacao.setDtRetorno(OffsetDateTime.now().plusDays(dias));
-        newLocacao.setDtLocacao(OffsetDateTime.now());
+        newLocacao.setDtRetorno(getNow().plusDays(dias));
+        newLocacao.setDtLocacao(getNow());
 
         locacaoRepository.salvar(newLocacao);
     }
